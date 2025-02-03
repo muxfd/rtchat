@@ -79,6 +79,36 @@ class ChatHistoryMessage extends StatelessWidget {
           return child;
         }
 
+        String getLabel(int seconds) {
+          if (seconds < 60) {
+            return AppLocalizations.of(context)!.justNow;
+          } else if (seconds < 3600) {
+            int minutes = seconds ~/ 60;
+            return "$minutes ${AppLocalizations.of(context)?.minutes} ${AppLocalizations.of(context)?.agoMesssageText}"; // Customize with i18n if necessary
+          } else if (seconds < 86400) {
+            // Less than 1 day
+            int hours = seconds ~/ 3600;
+            return "$hours ${AppLocalizations.of(context)?.hours} ${AppLocalizations.of(context)?.agoMesssageText}"; // Customize with i18n if necessary
+          } else if (seconds < 604800) {
+            // Less than 1 week
+            int days = seconds ~/ 86400;
+            return "$days ${AppLocalizations.of(context)?.days} ${AppLocalizations.of(context)?.agoMesssageText}"; // Customize with i18n if necessary
+          } else if (seconds < 1209600) {
+            // Less than 2 weeks
+            return AppLocalizations.of(context)!.lastWeek;
+          } else {
+            int weeks = seconds ~/ 604800;
+            return "$weeks ${AppLocalizations.of(context)?.weeks} ${AppLocalizations.of(context)?.agoMesssageText}"; // Customize with i18n if necessary
+          }
+        }
+
+        String formatDuration(DateTime timestamp) {
+          final now = DateTime.now();
+          final difference = now.difference(timestamp);
+
+          return getLabel(difference.inSeconds);
+        }
+
         return Material(
           child: InkWell(
               onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -93,6 +123,14 @@ class ChatHistoryMessage extends StatelessWidget {
                             primary: false,
                             children: [
                               if (kDebugMode) Text("DEBUG: id=${m.messageId}"),
+                              ListTile(
+                                leading:
+                                    const Icon(Icons.timer, color: Colors.grey),
+                                title: Text(
+                                    '${AppLocalizations.of(context)!.sentMesssageExpose} '
+                                    '${formatDuration(message.timestamp)} '
+                                    '${AppLocalizations.of(context)!.agoMesssageText}'),
+                              ),
                               Consumer<TtsModel>(
                                   builder: (context, ttsModel, child) {
                                 if (ttsModel.isMuted(m.author)) {

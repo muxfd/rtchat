@@ -988,5 +988,41 @@
   "textToSpeechDisabled": "Text to speech disabled",
   "@textToSpeechDisabled": {
       "description": "Message indicating that text to speech has been disabled"
+  },
+  "sentMesssageExpose" : "Sent",
+  "@sentMesssageExpose": {
+    "description": "Text label for the sent message expose"
+  },
+  "agoMesssageText" : "Ago",
+  "@agoMesssageText": {
+    "description": "Text label for the ago message text"
+  },
+  "justNow": "Just now",
+  "@justNow": {
+    "description": "Text label for the just now time"
+  },
+  "minutes" : "Minutes",
+  "@minutes": {
+    "description": "Text label for the minutes time"
+  },
+  "hours" : "Hours",
+  "@hours": {
+    "description": "Text label for the hours time"
+  },
+  "days" : "Days",
+  "@days": {
+    "description": "Text label for the days time"
+  },
+  "weeks" : "Weeks",
+  "@weeks": {
+    "description": "Text label for the weeks time"
+  },
+  "months" : "Months",
+  "@months": {
+    "description": "Text label for the months time"
+  },
+  "lastWeek" : "Last week",
+  "@lastWeek": {
+    "description": "Text label for the last week time"
   }
 }
