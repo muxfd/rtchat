@@ -988,5 +988,33 @@
   "textToSpeechDisabled": "Text to speech disabled",
   "@textToSpeechDisabled": {
       "description": "Message indicating that text to speech has been disabled"
+  },
+  "subscribedAtTier" : "subscribed at tier",
+  "@subscribedAtTierPrompt" : {
+    "subscribedAtTierPrompt" : "Text Box label to display tier subscribed at"
+  },
+  "gifted" : "gifted",
+  "@giftedPrompt" : {
+    "giftedPrompt" : "Text Box label to display tier of gifted subscription"
+  },
+     "tier": "Tier",
+  "@tierPrompt": {
+    "tierPrompt": "Text Box label to display tier of subscription"
+  },
+  "subscriptions": "subscriptions",
+  "@subscriptionsPrompt": {
+    "subscriptionsPrompt": "Text Box label to display prompt for subscriptions"
+  },
+  "subscription": "subscription",
+  "@subscriptionPrompt": {
+    "subscriptionPrompt": "Text Box label to display prompt for a subscription"
+  },
+   "theyHaveGifted": "They've gifted",
+  "@haveGiftedPrompt": {
+    "haveGiftedPrompt": "Text Box label to display prompt for 'They've gifted'"
+  },
+   "subsInTheChannel": "subs in the channel",
+  "@subsInTheChannelPrompt": {
+    "subsInTheChannelPrompt": "Text Box label to display prompt for subscriptions gifted in the channel"
   }
 }
