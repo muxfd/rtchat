@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rtchat/tts_plugin.dart';
+import 'package:rtchat/volume_plugin.dart';
 
 void main() {
   final ttsQueue = TTSQueue();
@@ -16,11 +17,24 @@ void main() {
             (MethodCall method) async {
       return null;
     });
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(VolumePlugin.channel,
+            (MethodCall method) async {
+      if (method.method == 'tts_on' || method.method == 'tts_off') {
+        return null; // Mock response for volume channel methods
+      }
+      throw MissingPluginException(
+          'No implementation found for method ${method.method} on channel ${VolumePlugin.channel.name}');
+    });
   });
 
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(TextToSpeechPlugin.channel, null);
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(VolumePlugin.channel, null);
   });
 
   test('Speak adds elements to the queue', () async {

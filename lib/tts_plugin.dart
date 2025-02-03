@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:rtchat/main.dart';
 import 'package:rtchat/notifications_plugin.dart';
+import 'package:rtchat/volume_plugin.dart';
 
 class TextToSpeechPlugin {
   static const MethodChannel channel = MethodChannel('ttsPlugin');
@@ -93,6 +94,7 @@ class TTSQueue {
     }
 
     if (queue.isNotEmpty) {
+      VolumePlugin.reduceVolumeOnTtsStart();
       final previous = queue.last;
       queue.addLast(element);
       await previous.completer.future;
@@ -101,10 +103,18 @@ class TTSQueue {
       }
       await TextToSpeechPlugin.speak(text, speed: speed ?? 1.5, volume: volume);
       completer.complete();
+
+      if (isEmpty) {
+        VolumePlugin.increaseVolumeOnTtsStop();
+      }
     } else {
       queue.addLast(element);
       await TextToSpeechPlugin.speak(text, speed: speed ?? 1.5, volume: volume);
       completer.complete();
+
+      if (isEmpty) {
+        VolumePlugin.increaseVolumeOnTtsStop();
+      }
     }
     queue.remove(element);
   }
