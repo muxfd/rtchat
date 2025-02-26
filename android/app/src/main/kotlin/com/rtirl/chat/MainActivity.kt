@@ -4,10 +4,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.AudioManager.OnAudioFocusChangeListener
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -24,9 +29,14 @@ import io.flutter.plugin.common.MethodChannel.Result
 import java.util.Locale
 import java.util.UUID
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterActivity(), AudioManager.OnAudioFocusChangeListener {
 
     private var sharedData: String = ""
+    private lateinit var audioManager: AudioManager
+    private lateinit var focusRequest: AudioFocusRequest
+    private val handler = Handler(Looper.getMainLooper())
+    private var playbackDelayed = false
+    private var wasDucking = false 
 
     companion object {
         var methodChannel: MethodChannel? = null
@@ -36,6 +46,16 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleIntent()
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).run {
+            setAudioAttributes(AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build())
+            setAcceptsDelayedFocusGain(true)
+            setOnAudioFocusChangeListener(this@MainActivity, handler)
+            build()
+        }
     }
 
     private fun startNotificationService() {
@@ -48,17 +68,38 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    override fun onAudioFocusChange(focusChange: Int) {
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (wasDucking) {
+                    methodChannel?.invokeMethod("audioVolume", 1.0)
+                    wasDucking = false 
+                }
+
+                if (playbackDelayed) {
+                    playbackDelayed = false
+                } else {
+                    methodChannel?.invokeMethod("audioVolume", 1.0) 
+                }
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                methodChannel?.invokeMethod("audioVolume", 0.3) 
+                wasDucking = true
+            }
+            AudioManager.AUDIOFOCUS_LOSS, 
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { 
+                if (!wasDucking) {
+                    // handle other cases if necessary
+                }
+            }
+        }
+    }
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         val ttsPlugin = TextToSpeechPlugin(this)
-        val ttsChannel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            "ttsPlugin"
-        )
-
-        val notificationChannel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            "tts_notifications"
-        )
+        val ttsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ttsPlugin")
+        val notificationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "tts_notifications")
+        val volumeChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "volume_channel")
 
         methodChannel = notificationChannel
 
@@ -81,18 +122,36 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        volumeChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "tts_on" -> {
+                    val res = audioManager.requestAudioFocus(focusRequest)
+                    when (res) {
+                        AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> {
+                            methodChannel?.invokeMethod("audioFocus", "gained")
+                            Log.d("Permission granted", "response granted")
+                        }
+                        AudioManager.AUDIOFOCUS_REQUEST_DELAYED -> {
+                            playbackDelayed = true
+                            methodChannel?.invokeMethod("audioFocus", "delayed")
+                        }
+                        else -> methodChannel?.invokeMethod("audioFocus", "failed")
+                    }
+                }
+                "tts_off" -> {
+                    audioManager.abandonAudioFocusRequest(focusRequest)
+                    methodChannel?.invokeMethod("audioFocus", "lost")
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         ttsChannel.setMethodCallHandler(ttsPlugin)
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            "com.rtirl.chat/audio"
-        ).setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.rtirl.chat/audio").setMethodCallHandler { call, result ->
             when (call.method) {
                 "set" -> {
                     val intent = Intent(this, AudioService::class.java)
-                    intent.putStringArrayListExtra(
-                        "urls",
-                        ArrayList(call.argument<List<String>>("urls") ?: listOf())
-                    )
+                    intent.putStringArrayListExtra("urls", ArrayList(call.argument<List<String>>("urls") ?: listOf()))
                     intent.action = AudioService.ACTION_START_SERVICE
                     startService(intent)
                     result.success(true)
@@ -104,35 +163,19 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "hasPermission" -> {
-                    result.success(
-                        Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                                Settings.canDrawOverlays(this)
-                    )
+                    result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this))
                 }
                 "requestPermission" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                        !Settings.canDrawOverlays(this)
-                    ) {
-                        startActivityForResult(
-                            Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:$packageName")
-                            ), 8675309
-                        )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                        startActivityForResult(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")), 8675309)
                     }
-                    result.success(
-                        Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                                Settings.canDrawOverlays(this)
-                    )
+                    result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this))
                 }
                 else -> result.notImplemented()
             }
         }
 
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            "com.rtirl.chat/share"
-        ).setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.rtirl.chat/share").setMethodCallHandler { call, result ->
             if (call.method == "getSharedData") {
                 result.success(sharedData)
                 sharedData = ""
@@ -143,7 +186,6 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun handleIntent() {
-        // Handle the received text share intent
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             intent.getStringExtra(Intent.EXTRA_TEXT)?.let { intentData ->
                 sharedData = intentData
@@ -151,7 +193,6 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
-
 
 class TextToSpeechPlugin(private val context: Context) : MethodCallHandler, TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
@@ -228,11 +269,7 @@ class TextToSpeechPlugin(private val context: Context) : MethodCallHandler, Text
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String) {
                 if (volume != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                    audioManager.setStreamVolume(
-                        AudioManager.STREAM_MUSIC,
-                        (audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * volume).toInt(),
-                        0
-                    )
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * volume).toInt(), 0)
                 }
             }
 

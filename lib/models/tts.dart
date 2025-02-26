@@ -16,6 +16,7 @@ import 'package:rtchat/models/messages/twitch/user.dart';
 import 'package:rtchat/models/tts/language.dart';
 import 'package:rtchat/models/tts/bytes_audio_source.dart';
 import 'package:rtchat/models/user.dart';
+import 'package:rtchat/volume_plugin.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -173,6 +174,10 @@ class TtsModel extends ChangeNotifier {
     if (value) {
       _lastMessageTime = DateTime.now();
     }
+    if (value) {
+      VolumePlugin.reduceVolumeOnTtsStart();
+    }
+
     say(
         localizations,
         SystemMessageModel(
@@ -384,6 +389,9 @@ class TtsModel extends ChangeNotifier {
         await audioPlayer.setAudioSource(BytesAudioSource(bytes));
         await audioPlayer.play();
         await Future.delayed(audioPlayer.duration ?? const Duration());
+        if (_pending.isEmpty) {
+          VolumePlugin.increaseVolumeOnTtsStop();
+        }
       }
     }
 
@@ -395,10 +403,14 @@ class TtsModel extends ChangeNotifier {
 
   void unsay(String messageId) {
     _pending.remove(messageId);
+    if (_pending.isEmpty) {
+      VolumePlugin.increaseVolumeOnTtsStop();
+    }
   }
 
   void stop() {
     _pending.clear();
+    VolumePlugin.increaseVolumeOnTtsStop();
   }
 
   void updateFromJson(Map<String, dynamic> json) {
