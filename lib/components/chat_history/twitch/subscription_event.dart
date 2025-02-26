@@ -28,6 +28,7 @@ class TwitchSubscriptionEventWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return DecoratedEventWidget.icon(
       icon: Icons.star,
       child: StyledText(
@@ -52,6 +53,7 @@ class TwitchSubscriptionGiftEventWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return DecoratedEventWidget.icon(
       icon: Icons.redeem,
       child: StyledText(
