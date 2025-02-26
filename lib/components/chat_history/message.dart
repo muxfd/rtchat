@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rtchat/components/chat_history/auxiliary/realtimecash_donation.dart';
 import 'package:rtchat/components/chat_history/auxiliary/streamelements.dart';
@@ -55,6 +56,9 @@ class ChatHistoryMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = message;
+    final formattedTimestamp =
+        DateFormat('yyyy-MM-dd HH:mm').format(m.timestamp);
+
     if (m is TwitchMessageModel) {
       return Consumer<LayoutModel>(builder: (context, layoutModel, child) {
         final announcement = m.annotations.announcement;
@@ -93,6 +97,10 @@ class ChatHistoryMessage extends StatelessWidget {
                             primary: false,
                             children: [
                               if (kDebugMode) Text("DEBUG: id=${m.messageId}"),
+                              ListTile(
+                                  leading: const Icon(Icons.timer,
+                                      color: Colors.grey),
+                                  title: Text(formattedTimestamp)),
                               Consumer<TtsModel>(
                                   builder: (context, ttsModel, child) {
                                 if (ttsModel.isMuted(m.author)) {
