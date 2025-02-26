@@ -4,7 +4,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_web_auth/flutter_web_auth.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:provider/provider.dart';
 import 'package:rtchat/components/auth/companion_auth.dart';
 import 'package:rtchat/models/user.dart';
@@ -111,7 +111,7 @@ class SignInWithTwitch extends StatelessWidget {
         onStart?.call();
         try {
           await FirebaseAnalytics.instance.logLogin(loginMethod: "twitch");
-          final result = await FlutterWebAuth.authenticate(
+          final result = await FlutterWebAuth2.authenticate(
               url: url.toString(), callbackUrlScheme: "com.rtirl.chat");
           final token = Uri.parse(result).queryParameters['token'];
           if (token != null) {

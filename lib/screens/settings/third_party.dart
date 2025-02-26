@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_web_auth/flutter_web_auth.dart';
+
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:rtchat/components/scanner_error.dart';
@@ -9,6 +9,9 @@ import 'package:rtchat/components/scanner_settings.dart';
 import 'package:rtchat/models/adapters/donations.dart';
 import 'package:rtchat/models/user.dart';
 import 'package:rtchat/urls.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+
+
 
 const streamlabsCurrencies = [
   [null, "Donation's currency"],
@@ -194,7 +197,7 @@ class _StreamlabsWidget extends StatelessWidget {
                   "Some strange authentication error occurred. Try signing out, or ask on Discord?")));
           return;
         }
-        final result = await FlutterWebAuth.authenticate(
+        final result = await FlutterWebAuth2.authenticate(
             url:
                 "https://chat.rtirl.com/auth/streamlabs/redirect?token=$idToken&provider=$provider",
             callbackUrlScheme: "com.rtirl.chat");
@@ -248,7 +251,7 @@ class _StreamElementsWidget extends StatelessWidget {
                   "Some strange authentication error occurred. Try signing out, or ask on Discord?")));
           return;
         }
-        final result = await FlutterWebAuth.authenticate(
+        final result = await FlutterWebAuth2.authenticate(
             url:
                 "https://chat.rtirl.com/auth/streamelements/redirect?token=$idToken&provider=$provider",
             callbackUrlScheme: "com.rtirl.chat");
