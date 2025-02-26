@@ -93,25 +93,13 @@ class _StreamPreviewState extends State<StreamPreview> {
       })
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (url) async {
-          await _controller.runJavaScript(
-              await rootBundle.loadString('assets/twitch-tunnel.js'));
-          // wait a second for twitch to catch up.
-          await Future.delayed(const Duration(seconds: 1));
           if (Platform.isIOS) {
             await _controller.runJavaScript(
-                "window.action(window.Actions.SetMuted, ${model.volume == 0})");
-          } else {
-            await _controller
-                .runJavaScript("window.action(window.Actions.SetMuted, false)");
+                await rootBundle.loadString('assets/twitch-tunnel.js'));
+            // wait a second for twitch to catch up.
+            await Future.delayed(const Duration(seconds: 1));
             await _controller.runJavaScript(
-                "window.action(window.Actions.SetVolume, ${model.volume / 100})");
-            if (model.isHighDefinition) {
-              await _controller.runJavaScript(
-                  "window.action(window.Actions.SetQuality, 'auto')");
-            } else {
-              await _controller.runJavaScript(
-                  "window.action(window.Actions.SetQuality, '160p')");
-            }
+                "window.action(window.Actions.SetMuted, ${model.volume == 0})");
           }
         },
       ));
@@ -208,9 +196,9 @@ class _StreamPreviewState extends State<StreamPreview> {
                                         model.volume = 0;
                                       }
                                       await _controller.runJavaScript(
-                                          "window.action(window.Actions.SetMuted, false)");
+                                          "document.querySelector('video').muted = false");
                                       await _controller.runJavaScript(
-                                          "window.action(window.Actions.SetVolume, ${model.volume / 100})");
+                                          "document.querySelector('video').volume = ${model.volume / 100}");
                                     },
                               color: Colors.white,
                               icon: Icon(
@@ -220,26 +208,6 @@ class _StreamPreviewState extends State<StreamPreview> {
                                         ? Icons.volume_up
                                         : Icons.volume_down,
                               )),
-                          // SetQuality doesn't seem to work on ios so we don't show the button.
-                          if (!Platform.isIOS)
-                            IconButton(
-                                onPressed: !_isOverlayActive
-                                    ? null
-                                    : () async {
-                                        model.isHighDefinition =
-                                            !model.isHighDefinition;
-                                        if (model.isHighDefinition) {
-                                          await _controller.runJavaScript(
-                                              "window.action(window.Actions.SetQuality, 'auto')");
-                                        } else {
-                                          await _controller.runJavaScript(
-                                              "window.action(window.Actions.SetQuality, '160p')");
-                                        }
-                                      },
-                                color: Colors.white,
-                                icon: Icon(model.isHighDefinition
-                                    ? Icons.hd
-                                    : Icons.sd)),
                         ],
                       );
                     },
